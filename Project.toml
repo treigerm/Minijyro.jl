@@ -1,0 +1,13 @@
+name = "Minijyro"
+uuid = "9d213a20-5ebd-4614-9657-39d6e04a91ad"
+authors = ["Tim Reichelt <treichelt6@gmail.com>"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
