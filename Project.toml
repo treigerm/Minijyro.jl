@@ -3,6 +3,9 @@ uuid = "9d213a20-5ebd-4614-9657-39d6e04a91ad"
 authors = ["Tim Reichelt <treichelt6@gmail.com>"]
 version = "0.1.0"
 
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+
 [compat]
 julia = "1"
 
