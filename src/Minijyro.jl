@@ -2,9 +2,10 @@ module Minijyro
 
 using Distributions
 
-export sample!, apply_stack!, TraceHandler, LogJointHandler, ConditionHandler, enter!
+export sample!, apply_stack!, TraceHandler, LogJointHandler, ConditionHandler, enter!, @model
 
 include("handlers.jl")
+include("dsl.jl")
 
 function sample!(trace, handlers_stack, name, dist)
     # TODO: Type annotations.

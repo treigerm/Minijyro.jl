@@ -60,3 +60,9 @@ end
     @test val == 0.0
     @test trace[:logjoint] == logpdf(dist, 0.0)
 end
+
+@testset "model macro" begin
+    @model function model()
+        trace = Dict()
+    end
+end
