@@ -27,7 +27,7 @@ macro jyro(expr)
         for h in $(STACK_SYMBOL)[end:-1:1]
             enter!($TRACE_SYMBOL, h)
         end
-        $(body.args[2])
+        $(body.args...)
         for h in $STACK_SYMBOL
             exit!($TRACE_SYMBOL, h)
         end
@@ -38,6 +38,7 @@ macro jyro(expr)
     fn_name = gensym(model_name)
     fn_dict[:name] = fn_name
     fn_expr = esc(MacroTools.combinedef(fn_dict))
+    show(fn_expr)
 
     return quote
         $fn_expr
@@ -48,8 +49,12 @@ end
 
 function translate_tilde(expr)
     # TODO: Handler cases in loops.
+    # NOTE: Code adapted from https://github.com/probcomp/Gen/blob/master/src/dsl/dsl.jl
     MacroTools.postwalk(expr) do e
-        if MacroTools.@capture(e, lhs_ ~ rhs_)
+        if MacroTools.@capture(e, {addr_} ~ rhs_)
+            # TODO: How to handle variable assignment?
+            :(Minijyro.sample!($TRACE_SYMBOL, $STACK_SYMBOL, $(addr), $rhs))
+        elseif MacroTools.@capture(e, lhs_ ~ rhs_)
             name_symbol = QuoteNode(lhs)
             :($lhs = Minijyro.sample!($TRACE_SYMBOL, $STACK_SYMBOL, $name_symbol, $rhs))
         else
