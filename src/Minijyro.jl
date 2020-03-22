@@ -2,7 +2,8 @@ module Minijyro
 
 using Distributions
 
-export sample!, apply_stack!, TraceHandler, LogJointHandler, ConditionHandler, enter!, @model
+# TODO: Do we want to export the enter! and exit! functions?
+export sample!, apply_stack!, TraceHandler, LogJointHandler, ConditionHandler, enter!, exit!, @jyro, handle!
 
 include("handlers.jl")
 include("dsl.jl")

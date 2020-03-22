@@ -3,19 +3,47 @@ import MacroTools
 const TRACE_SYMBOL = :trace
 const STACK_SYMBOL = :handlers_stack
 
-macro model(exp)
-    # TODO: Check for return.
-    body = translate_tilde(exp.args[2])
+# TODO: Make handlers stack a stack of AbstractHandlers.
+# TODO: Maybe use actual stack and not an array?
+struct MinijyroModel
+    handlers_stack::Array{Any,1}
+    model_fn::Function
+end
 
-    exp.args[2] = quote
+function (model::MinijyroModel)(args...)
+    return model.model_fn(model.handlers_stack, args...)
+end
+
+macro jyro(expr)
+    # TODO: Check for return.
+    fn_dict = MacroTools.splitdef(expr)
+    pushfirst!(fn_dict[:args], STACK_SYMBOL)
+
+    body = translate_tilde(fn_dict[:body])
+
+    # TODO: Is it okay to assign h to the loop variable?
+    fn_dict[:body] = quote
         $TRACE_SYMBOL = Dict()
-        $STACK_SYMBOL = []
+        for h in $(STACK_SYMBOL)[end:-1:1]
+            enter!($TRACE_SYMBOL, h)
+        end
         $(body.args[2])
+        for h in $STACK_SYMBOL
+            exit!($TRACE_SYMBOL, h)
+        end
         return $TRACE_SYMBOL
     end
 
-    show(exp)
-    return esc(:($exp))
+    model_name = fn_dict[:name]
+    fn_name = gensym(model_name)
+    fn_dict[:name] = fn_name
+    fn_expr = esc(MacroTools.combinedef(fn_dict))
+
+    return quote
+        $fn_expr
+
+        $(esc(model_name)) = MinijyroModel([], $(esc(fn_name)))
+    end
 end
 
 function translate_tilde(expr)
@@ -29,3 +57,10 @@ function translate_tilde(expr)
         end
     end
 end
+
+function handle!(model::MinijyroModel, handler)
+    # TODO: Type for handler.
+    push!(model.handlers_stack, handler)
+end
+
+# TODO: Macro for handling code segments
