@@ -11,6 +11,7 @@ struct MinijyroModel
 end
 
 function (model::MinijyroModel)(args...)
+    # TODO: Possibly give nicer error message when args are given in wrong type.
     return model.model_fn(model.handlers_stack, args...)
 end
 
@@ -38,7 +39,6 @@ macro jyro(expr)
     fn_name = gensym(model_name)
     fn_dict[:name] = fn_name
     fn_expr = esc(MacroTools.combinedef(fn_dict))
-    show(fn_expr)
 
     return quote
         $fn_expr
