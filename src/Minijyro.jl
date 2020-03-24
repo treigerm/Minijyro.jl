@@ -15,6 +15,7 @@ function sample!(trace, handlers_stack, name, dist)
     end
 
     # TODO: Does this need to be a dict?
+    # TODO: What are the fields we really need for our use case.
     initial_msg = Dict(
         :fn => rand,
         :args => (dist, ),
@@ -26,7 +27,6 @@ function sample!(trace, handlers_stack, name, dist)
 end
 
 function apply_stack!(trace, handlers_stack, msg)
-    # TODO: Do we need to pass the trace here?
     pointer = 1
     for (p, handler) in enumerate(handlers_stack[end:-1:1])
         pointer = p
