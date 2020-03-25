@@ -15,10 +15,11 @@ export sample!,
     enter!,
     exit!,
     @jyro,
-    handle!
+    handle!,
+    handle
 
-include("handlers.jl")
 include("dsl.jl")
+include("handlers.jl")
 
 function sample!(trace, handlers_stack, name, dist)
     # TODO: Type annotations.

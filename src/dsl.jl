@@ -1,4 +1,5 @@
 import MacroTools
+using Base
 
 const TRACE_SYMBOL = :trace
 const STACK_SYMBOL = :handlers_stack
@@ -14,6 +15,8 @@ function (model::MinijyroModel)(args...)
     # TODO: Possibly give nicer error message when args are given in wrong type.
     return model.model_fn(model.handlers_stack, args...)
 end
+
+Base.copy(m::MinijyroModel) = MinijyroModel(copy(m.handlers_stack), m.model_fn)
 
 macro jyro(expr)
     # TODO: Check for return.
@@ -66,6 +69,13 @@ end
 function handle!(model::MinijyroModel, handler)
     # TODO: Type for handler.
     push!(model.handlers_stack, handler)
+end
+
+function handle(model::MinijyroModel, handler)
+    # Same has handle! but do not alter original model.
+    m = copy(model)
+    push!(m.handlers_stack, handler)
+    return m
 end
 
 # TODO: Macro for handling code segments

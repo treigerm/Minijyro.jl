@@ -30,6 +30,20 @@ end
     @test isa(apply_stack!(trace, stack, msg), Dict)
 end
 
+@testset "handle" begin
+    m = Minijyro.MinijyroModel([], x -> rand(Normal(), x))
+
+    handle!(m, TraceHandler())
+    @test length(m.handlers_stack) == 1
+    @test isa(m.handlers_stack[1], TraceHandler)
+
+    new_m = handle(m, LogJointHandler())
+    @test length(m.handlers_stack) == 1
+    @test length(new_m.handlers_stack) == 2
+    @test isa(new_m.handlers_stack[1], TraceHandler)
+    @test isa(new_m.handlers_stack[2], LogJointHandler)
+end
+
 @testset "trace" begin
     trace = Dict()
     trace_handler = TraceHandler()

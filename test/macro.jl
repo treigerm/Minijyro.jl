@@ -30,10 +30,8 @@ function density(w, data)
     return t[:logjoint]
 end
 
-#m = DensityModel(x -> density(x, data))
-#spl = RWMH(Normal(0,1))
-#chain = sample(m, spl, 2000; param_names=["w"], chain_type=Chains)
 
+# NUTS set up.
 D = 1
 initial_w = [0.0]
 

@@ -1,7 +1,8 @@
-# TODO: Macros to add to trace
+# TODO: Generate functions using the handler and handle functions.
 
 abstract type AbstractHandler end
 
+# TODO: Is this good Julia code for "noop" functions?
 function enter!(trace::Dict, h::AbstractHandler)
     return
 end
@@ -18,9 +19,7 @@ function postprocess_message!(trace::Dict, h::AbstractHandler, msg::Dict)
     return
 end
 
-# TODO: Does this need to be mutable?
 # TODO: Maybe rename into something like RecordMessagesHandler
-# TODO: do not save trace and stuff in inside trace handler but instead use the trace to save stuff
 struct TraceHandler <: AbstractHandler end
 
 function enter!(trace::Dict, h::TraceHandler)
@@ -52,8 +51,6 @@ function process_message!(trace::Dict, h::ConditionHandler, msg::Dict)
     end
 end
 
-# TODO: Queue effect handler.
-
 struct ReplayHandler <: AbstractHandler
     trace::Dict
 end
@@ -83,20 +80,20 @@ end
 
 function queue(model::MinijyroModel, queue)
     # TODO: Make sure this function does not change model argument but creates new one.
-    max_tries = 10 # TODO: Do we need this?
+    max_tries = Int(1e6) # TODO: Do we need this?
     function _fn(handlers_stack, args...)
-        hstack = deepcopy(handlers_stack)
+        # TODO: This cannot deal with the fact that model_fn might have been
+        # been changed. Alternative is to pass model to the model_fn.
+        m = MinijyroModel(handlers_stack, model.model_fn)
         for i in 1:max_tries
             top_trace = pop!(queue)
             try
-                # TODO: How to make sure that the handlers are going to be removed?
-                # NOTE: If we define custom handler functions this should work.
-                push!(hstack, ReplayHandler(top_trace))
+                queue_m = handle(m, ReplayHandler(top_trace))
                 discr_esc(msg) = !haskey(top_trace[:msgs], msg[:name])
-                push!(hstack, EscapeHandler(discr_esc))
-                push!(hstack, TraceHandler())
+                queue_m = handle(queue_m, EscapeHandler(discr_esc))
+                queue_m = handle(queue_m, TraceHandler())
 
-                full_trace = model.model_fn(hstack, args...)
+                full_trace = queue_m(args...)
                 # We only get to the return call if there has been no escape i.e.
                 # if the top_trace has been a full trace.
                 return full_trace
@@ -105,6 +102,9 @@ function queue(model::MinijyroModel, queue)
                     for val in support(e.trace[:msgs][e.name][:args][1])
                         new_trace = deepcopy(e.trace)
                         new_trace[:msgs][e.name][:value] = val
+
+                        # Make sure that we do not escape again when using this
+                        # trace for replay.
                         new_trace[:msgs][e.name][:done] = false
                         new_trace[:msgs][e.name][:continuation] = nothing
                         push!(queue, new_trace)
@@ -112,11 +112,6 @@ function queue(model::MinijyroModel, queue)
                 else
                     throw(e)
                 end
-            finally
-                # TODO: How to get rid of this?
-                pop!(hstack)
-                pop!(hstack)
-                pop!(hstack)
             end
         end
     end
