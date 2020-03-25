@@ -96,23 +96,48 @@ end
 @testset "escape handler" begin
     @jyro function model()
         x ~ Normal()
-        y ~ Normal()
+        {:y => 1} ~ Normal()
         z ~ Normal()
     end
 
     # Escape when we reach variable y.
-    handle!(model, EscapeHandler(x -> x[:name] == :y))
+    handle!(model, EscapeHandler(x -> x[:name] == (:y => 1)))
     handle!(model, TraceHandler())
     try
         t = model()
     catch e
-        t = e.trace
+        # TODO: Should this test be in a finally block?
+        if isa(e, EscapeException)
+            t = e.trace
 
-        @test isa(e, EscapeException)
-        @test e.msg[:name] == :y
-        @test haskey(t[:msgs], :x)
-        @test isa(t[:msgs][:x][:value], Float64)
-        @test t[:msgs][:y][:value] == nothing
-        @test !haskey(t[:msgs], :z)
+            @test e.name == (:y => 1)
+            @test haskey(t[:msgs], :x)
+            @test isa(t[:msgs][:x][:value], Float64)
+            @test t[:msgs][e.name][:value] == nothing
+            @test !haskey(t[:msgs], :z)
+        else
+            throw(e)
+        end
     end
+end
+
+@testset "queue" begin
+    @jyro function model()
+        a ~ Bernoulli(0.5)
+        b ~ Bernoulli(0.5)
+    end
+
+    true_enum = Set([(true,true), (false,true), (true,false), (false,false)])
+    empty_trace = Dict()
+    empty_trace[:msgs] = Dict()
+    q = [empty_trace]
+
+    enum_model = queue(model, q)
+    generated_enum = Set()
+    while length(q) > 0
+        t = enum_model()
+        push!(generated_enum, (t[:msgs][:a][:value], t[:msgs][:b][:value]))
+    end
+
+    @test true_enum == generated_enum
 end

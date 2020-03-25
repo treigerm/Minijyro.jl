@@ -53,7 +53,6 @@ function process_message!(trace::Dict, h::ConditionHandler, msg::Dict)
 end
 
 # TODO: Queue effect handler.
-# TODO: Escape effect handler. Requires changing apply_stack to have continuiation.
 
 struct ReplayHandler <: AbstractHandler
     trace::Dict
@@ -71,13 +70,56 @@ end
 
 struct EscapeException <: Exception
     trace::Dict
-    msg::Dict
+    name
 end
 
 function process_message!(trace::Dict, h::EscapeHandler, msg::Dict)
     if h.escape_fn(msg)
         msg[:done] = true
-        cont(t, m) = throw(EscapeException(t, m))
+        cont(t, m) = throw(EscapeException(t, m[:name]))
         msg[:continuation] = cont
     end
+end
+
+function queue(model::MinijyroModel, queue)
+    # TODO: Make sure this function does not change model argument but creates new one.
+    max_tries = 10 # TODO: Do we need this?
+    function _fn(handlers_stack, args...)
+        hstack = deepcopy(handlers_stack)
+        for i in 1:max_tries
+            top_trace = pop!(queue)
+            try
+                # TODO: How to make sure that the handlers are going to be removed?
+                # NOTE: If we define custom handler functions this should work.
+                push!(hstack, ReplayHandler(top_trace))
+                discr_esc(msg) = !haskey(top_trace[:msgs], msg[:name])
+                push!(hstack, EscapeHandler(discr_esc))
+                push!(hstack, TraceHandler())
+
+                full_trace = model.model_fn(hstack, args...)
+                # We only get to the return call if there has been no escape i.e.
+                # if the top_trace has been a full trace.
+                return full_trace
+            catch e
+                if isa(e, EscapeException)
+                    for val in support(e.trace[:msgs][e.name][:args][1])
+                        new_trace = deepcopy(e.trace)
+                        new_trace[:msgs][e.name][:value] = val
+                        new_trace[:msgs][e.name][:done] = false
+                        new_trace[:msgs][e.name][:continuation] = nothing
+                        push!(queue, new_trace)
+                    end
+                else
+                    throw(e)
+                end
+            finally
+                # TODO: How to get rid of this?
+                pop!(hstack)
+                pop!(hstack)
+                pop!(hstack)
+            end
+        end
+    end
+
+    return MinijyroModel(model.handlers_stack, _fn)
 end
