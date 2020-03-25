@@ -72,8 +72,6 @@ end
 end
 
 @testset "replay handler" begin
-    trace = Dict()
-
     # First sampling.
     @jyro function model1()
         x ~ Normal()
@@ -82,6 +80,7 @@ end
     handle!(model1, TraceHandler())
     trace1 = model1()
 
+    # Second sampling.
     @jyro function model2()
         x ~ Normal()
         y ~ Normal()
@@ -92,4 +91,28 @@ end
     trace2 = model2()
 
     @test trace1[:msgs][:x][:value] == trace2[:msgs][:x][:value]
+end
+
+@testset "escape handler" begin
+    @jyro function model()
+        x ~ Normal()
+        y ~ Normal()
+        z ~ Normal()
+    end
+
+    # Escape when we reach variable y.
+    handle!(model, EscapeHandler(x -> x[:name] == :y))
+    handle!(model, TraceHandler())
+    try
+        t = model()
+    catch e
+        t = e.trace
+
+        @test isa(e, EscapeException)
+        @test e.msg[:name] == :y
+        @test haskey(t[:msgs], :x)
+        @test isa(t[:msgs][:x][:value], Float64)
+        @test t[:msgs][:y][:value] == nothing
+        @test !haskey(t[:msgs], :z)
+    end
 end

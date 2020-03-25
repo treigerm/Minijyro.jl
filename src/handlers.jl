@@ -54,7 +54,6 @@ end
 
 # TODO: Queue effect handler.
 # TODO: Escape effect handler. Requires changing apply_stack to have continuiation.
-# TODO: Replay effect handler.
 
 struct ReplayHandler <: AbstractHandler
     trace::Dict
@@ -63,5 +62,22 @@ end
 function process_message!(trace::Dict, h::ReplayHandler, msg::Dict)
     if haskey(h.trace[:msgs], msg[:name])
         msg[:value] = h.trace[:msgs][msg[:name]][:value]
+    end
+end
+
+struct EscapeHandler <: AbstractHandler
+    escape_fn::Function
+end
+
+struct EscapeException <: Exception
+    trace::Dict
+    msg::Dict
+end
+
+function process_message!(trace::Dict, h::EscapeHandler, msg::Dict)
+    if h.escape_fn(msg)
+        msg[:done] = true
+        cont(t, m) = throw(EscapeException(t, m))
+        msg[:continuation] = cont
     end
 end

@@ -9,6 +9,8 @@ export sample!,
     LogJointHandler,
     ConditionHandler,
     ReplayHandler,
+    EscapeHandler,
+    EscapeException,
     enter!,
     exit!,
     @jyro,
@@ -45,7 +47,7 @@ function apply_stack!(trace, handlers_stack, msg)
         end
     end
 
-    if get(msg, :value, nothing) == nothing
+    if !(get(msg, :value, nothing) != nothing || get(msg, :done, false))
         msg[:value] = msg[:fn](msg[:args]...)
     end
 
@@ -57,6 +59,10 @@ function apply_stack!(trace, handlers_stack, msg)
 
     for handler in handlers_stack[end-pointer+1:end]
         postprocess_message!(trace, handler, msg)
+    end
+
+    if get(msg, :continuation, nothing) != nothing
+        msg[:continuation](trace, msg)
     end
 
     return msg
