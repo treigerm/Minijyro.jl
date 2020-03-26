@@ -78,8 +78,45 @@ function process_message!(trace::Dict, h::EscapeHandler, msg::Dict)
     end
 end
 
+# Generated convenience functions
+handlers = [
+    :TraceHandler,
+    :LogJointHandler,
+    :ConditionHandler,
+    :ReplayHandler,
+    :EscapeHandler
+]
+
+function get_function_name(type_name::Symbol)
+    # Takes handler type and returns an adequate function name
+    # Example: LogJointHandler -> log_joint
+    s = String(type_name)
+    prefix = split(s, "Handler")[1]
+    regex = r"([a-z])([A-Z]+)"
+    subsititution = s"\1_\2"
+    fn_name = lowercase(replace(prefix, regex => subsititution))
+    return Symbol(fn_name)
+end
+
+for h in handlers
+    h_fn_name = get_function_name(h)
+    # TODO: Can we do kwargs as well?
+    # Function name for when we do mutation.
+    h_fn_name_mut = Symbol(h_fn_name, "!")
+    @eval begin
+        export $(h_fn_name_mut), $(h_fn_name)
+
+        function $(h_fn_name_mut)(model, args...)
+            handle!(model, $(h)(args...))
+        end
+
+        function $(h_fn_name)(model, args...)
+            return handle(model, $(h)(args...))
+        end
+    end
+end
+
 function queue(model::MinijyroModel, queue)
-    # TODO: Make sure this function does not change model argument but creates new one.
     max_tries = Int(1e6) # TODO: Do we need this?
     function _fn(handlers_stack, args...)
         # TODO: This cannot deal with the fact that model_fn might have been

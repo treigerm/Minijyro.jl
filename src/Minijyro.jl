@@ -16,10 +16,13 @@ export sample!,
     exit!,
     @jyro,
     handle!,
-    handle
+    handle,
+    discrete_enumeration
 
 include("dsl.jl")
 include("handlers.jl")
+include("inference.jl")
+
 
 function sample!(trace, handlers_stack, name, dist)
     # TODO: Type annotations.

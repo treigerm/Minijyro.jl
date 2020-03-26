@@ -155,3 +155,31 @@ end
 
     @test true_enum == generated_enum
 end
+
+@testset "enumeration" begin
+    @jyro function model()
+        a ~ Bernoulli(0.5)
+        b ~ Bernoulli(0.5)
+        c ~ Bernoulli(0.5)
+        # Use this as a deterministic function.
+        s ~ DiscreteNonParametric([a + b + c], [1.0])
+    end
+
+    #handle!(model, ConditionHandler(Dict(:s => 2)))
+    dist = discrete_enumeration(model, :s)
+    # TODO: Tests.
+end
+
+@testset "generated" begin
+    @jyro function model()
+        a ~ Normal()
+    end
+
+    conditioned_model = condition(model, Dict(:a => 1.0))
+    trace!(model)
+    t = model()
+    cond_t = trace(conditioned_model)()
+
+    @test cond_t[:msgs][:a][:value] == 1.0
+    @test cond_t[:msgs][:a][:value] != t[:msgs][:a][:value] # This should technically never happen.
+end
