@@ -167,6 +167,8 @@ end
 
     #handle!(model, ConditionHandler(Dict(:s => 2)))
     dist = discrete_enumeration(model, :s)
+    analytic_dist = DiscreteNonParametric([0, 1, 2, 3], [0.125, 0.375, 0.375, 0.125])
+    @test dist == analytic_dist
     # TODO: Tests.
 end
 

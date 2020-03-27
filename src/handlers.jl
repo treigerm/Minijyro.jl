@@ -37,7 +37,11 @@ function enter!(trace::Dict, h::LogJointHandler)
 end
 
 function postprocess_message!(trace::Dict, h::LogJointHandler, msg::Dict)
-    trace[:logjoint] = trace[:logjoint] + logpdf(msg[:args][1], msg[:value])
+    dist = msg[:args][1]
+    # TODO: What to do if value is nothing.
+    if msg[:value] != nothing
+        trace[:logjoint] = trace[:logjoint] + logpdf(dist, msg[:value])
+    end
 end
 
 struct ConditionHandler <: AbstractHandler

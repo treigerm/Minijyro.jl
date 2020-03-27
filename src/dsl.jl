@@ -66,6 +66,7 @@ function translate_tilde(expr)
     end
 end
 
+# TODO: Maybe move this into handlers.jl?
 function handle!(model::MinijyroModel, handler)
     # TODO: Type for handler.
     push!(model.handlers_stack, handler)
