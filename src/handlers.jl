@@ -52,6 +52,7 @@ function process_message!(trace::Dict, h::ConditionHandler, msg::Dict)
     if haskey(h.data, msg[:name])
         msg[:value] = h.data[msg[:name]]
         msg[:stop] = true
+        msg[:is_observed] = true
     end
 end
 

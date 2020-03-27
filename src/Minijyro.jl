@@ -17,7 +17,10 @@ export sample!,
     @jyro,
     handle!,
     handle,
-    discrete_enumeration
+    discrete_enumeration,
+    hmc,
+    log_prob
+
 
 include("dsl.jl")
 include("handlers.jl")
@@ -36,7 +39,8 @@ function sample!(trace, handlers_stack, name, dist)
         :fn => rand,
         :args => (dist, ),
         :name => name,
-        :value => nothing
+        :value => nothing,
+        :is_observed => false
     )
     msg = apply_stack!(trace, handlers_stack, initial_msg)
     return msg[:value]
@@ -71,6 +75,18 @@ function apply_stack!(trace, handlers_stack, msg)
     end
 
     return msg
+end
+
+# TODO: Is this the right place for this function?
+function log_prob(trace::Dict)
+    if !haskey(trace, :msgs)
+        error("Trace must contain messages. Run model with TraceHandler.")
+    end
+
+    log_prob = 0.0
+    for msg in values(trace[:msgs])
+        log_prob += logpdf(msg[:args][1], msg[:value])
+    end
 end
 
 end # module

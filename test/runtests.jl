@@ -83,6 +83,7 @@ end
 
     @test val == 0.0
     @test trace[:logjoint] == logpdf(dist, 0.0)
+    # TODO: Add test for is observed.    
 end
 
 @testset "replay handler" begin
