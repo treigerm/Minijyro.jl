@@ -128,7 +128,7 @@ function queue(model::MinijyroModel, queue)
         # been changed. Alternative is to pass model to the model_fn.
         m = MinijyroModel(handlers_stack, model.model_fn)
         for i in 1:max_tries
-            top_trace = pop!(queue)
+            top_trace = popfirst!(queue)
             try
                 queue_m = handle(m, ReplayHandler(top_trace))
                 discr_esc(msg) = !haskey(top_trace[:msgs], msg[:name])
