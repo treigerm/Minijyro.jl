@@ -1,12 +1,7 @@
 using DistributionsAD
 using Distributions
-using ForwardDiff
-using AdvancedHMC
 
 using Minijyro
-
-#using AdvancedMH
-#using MCMCChains
 
 @jyro function model(xs::Vector{Float64})
     w ~ Normal(0, 1)
