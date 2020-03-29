@@ -3,6 +3,7 @@ module Minijyro
 using Distributions
 
 # TODO: Do we want to export the enter! and exit! functions?
+# TODO: Reexport Distributions, DistributionsAD and AutoDiff
 export sample!,
     apply_stack!,
     TraceHandler,

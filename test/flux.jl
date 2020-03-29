@@ -1,7 +1,9 @@
 using Flux
 using LinearAlgebra: I # Identity matrix
+using DistributionsAD
+using Distributions
+
 using Minijyro
-using ReverseDiff
 
 function get_num_params(nn)
     # For each parameter vector count the number of elements and collect the total
@@ -35,7 +37,7 @@ function predict(m, w, xs)
 end
 
 # Generate some random data.
-D = 10 # Dimensionality of data
+D = 2 # Dimensionality of data
 N = 100 # Number of data points
 sigma = 0.1 # Noise level TODO: Set a reasonable value for this.
 dnn = Chain(Dense(D, 5, relu), Dense(5, 1), x -> vec(x))
@@ -43,11 +45,10 @@ dnn = Chain(Dense(D, 5, relu), Dense(5, 1), x -> vec(x))
 xs = randn(D, N)
 true_trace = trace(model)(xs, dnn, sigma)
 ys = true_trace[:msgs][:y][:value]
-#true_w = true_trace[:msgs][:w][:value]
 
 # Do inference.
-#y_data = Dict((:y => i) => true_trace[:msgs][(:y => i)][:value] for i in 1:N)
 condition!(model, Dict(:y => ys))
 trace!(model)
 
-samples, stats = hmc(model, 0.05, 10, 1000, (xs, dnn, sigma)); # TODO: name arguments.
+# TODO: Tune these values.
+samples, stats = hmc(model, 0.05, 10, 1000, (xs, dnn, sigma), autodiff=:reverse); # TODO: name arguments.

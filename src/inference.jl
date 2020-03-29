@@ -27,8 +27,7 @@ function discrete_enumeration(model::MinijyroModel, site_name)
     return DiscreteNonParametric(vals, probs)
 end
 
-function hmc(model::MinijyroModel, step_size, n_leapfrog, n_samples, model_args)
-    # TODO: This assumes a "static" model with fixed dimensionality.
+function get_param_info(model, model_args)
     t = trace(model)(model_args...)
     param_info = Dict()
     num_params = 0 # Total number of parameters
@@ -47,37 +46,58 @@ function hmc(model::MinijyroModel, step_size, n_leapfrog, n_samples, model_args)
             num_params += d[:is_scalar] ? 1 : d[:num_elems]
         end
     end
+
+    return (param_info, num_params)
+end
+
+function load_params!(params_dict, param_info, params)
+    # Load parameters from params into params_dict.
+    i = 1
+    for name in keys(param_info)
+        if param_info[name][:is_scalar]
+            params_dict[name] = params[i]
+            i += 1
+        else
+            num_elems = param_info[name][:num_elems]
+            params_dict[name] = reshape(params[i:i+num_elems-1], param_info[name][:shape])
+            i += num_elems # TODO: Check for no off by one error.
+        end
+    end
+end
+
+function get_grad_fn(density::Function, autodiff::Symbol)
+    if autodiff == :reverse
+        function grad_density(x)
+            results = DiffResults.GradientResult(x)
+            ReverseDiff.gradient!(results, density, x)
+            return (DiffResults.value(results), DiffResults.gradient(results))
+        end
+        return grad_density
+    elseif autodiff == :forward
+        return ForwardDiff
+    else
+        error("Autodiff option $autodiff not supported")
+    end
+end
+
+function hmc(model::MinijyroModel, step_size, n_leapfrog, n_samples, model_args; autodiff=:forward)
+    # TODO: This assumes a "static" model with fixed dimensionality.
+    param_info, num_params = get_param_info(model, model_args)
     initial_params = randn(num_params)
 
     function density(params)
         params_dict = Dict()
-        # Precompute mapping param_name -> (length, shape)
-        i = 1
-        for name in keys(param_info)
-            if param_info[name][:is_scalar]
-                params_dict[name] = params[i]
-                i += 1
-            else
-                num_elems = param_info[name][:num_elems]
-                params_dict[name] = reshape(params[i:i+num_elems-1], param_info[name][:shape])
-                i += num_elems # TODO: Check for no off by one error.
-            end
-        end
+        load_params!(params_dict, param_info, params)
         m = log_joint(condition(model, params_dict))
         return m(model_args...)[:logjoint]
     end
 
-    function grad_density(x)
-        # TODO: Use tape.
-        score = density(x)
-        grad = ReverseDiff.gradient(density, x)
-        return (score, grad)
-    end
+    grad_fn = get_grad_fn(density, autodiff)
 
     # Construct Hamiltonian system
     metric = UnitEuclideanMetric(length(initial_params))
     # TODO: More autodiff options.
-    hamiltonian = Hamiltonian(metric, density, grad_density)
+    hamiltonian = Hamiltonian(metric, density, grad_fn)
 
     integrator = Leapfrog(step_size)
     proposal = StaticTrajectory(integrator, n_leapfrog)
