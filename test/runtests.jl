@@ -16,22 +16,10 @@ Random.seed!(42)
     @test isa(Minijyro.sample!(trace, handlers_stack, name, dist), Float64)
 end
 
-@testset "apply stack function" begin
-    # TODO: Checksome basic trace handler functionality.
-    trace = Dict()
-    stack = []
-    msg = Dict(
-        :fn => rand,
-        :args => (Normal(),),
-        :value => nothing
-    )
-
-    @test isa(apply_stack!(trace, stack, msg)[:value], Float64)
-    @test isa(apply_stack!(trace, stack, msg), Dict)
-end
-
 @testset "handle" begin
-    m = Minijyro.MinijyroModel([], x -> rand(Normal(), x))
+    @jyro function m()
+        x ~ Normal()
+    end
 
     handle!(m, TraceHandler())
     @test length(m.handlers_stack) == 1
@@ -45,45 +33,45 @@ end
 end
 
 @testset "trace" begin
-    trace = Dict()
-    trace_handler = TraceHandler()
-    handlers_stack = [trace_handler]
+    @jyro function m()
+        x ~ Normal()
+    end
 
-    name = :normal
-    dist = Normal()
-    enter!(trace, handlers_stack[1])
-    val = Minijyro.sample!(trace, handlers_stack, name, dist)
-
-    @test val == trace[:msgs][:normal][:value]
+    handle!(m, TraceHandler())
+    t = m()
+    @test haskey(t, :msgs)
+    @test haskey(t[:msgs], :x)
+    @test isa(t[:msgs][:x][:value], Float64)
 end
 
 @testset "logjoint" begin
-    trace = Dict()
-    logjoint_handler = LogJointHandler()
-    handlers_stack = [logjoint_handler]
+    @jyro function m()
+        x ~ Normal()
+    end
 
-    name = :normal
-    dist = Normal()
-    enter!(trace, handlers_stack[1])
-    val = Minijyro.sample!(trace, handlers_stack, name, dist)
+    trace!(m)
+    log_joint!(m)
+    t = m()
+    val = t[:msgs][:x][:value]
 
-    @test logpdf(dist, val) == trace[:logjoint]
+    @test logpdf(Normal(), val) == t[:logjoint]
 end
 
 @testset "condition" begin
-    trace = Dict()
-    logjoint_handler = LogJointHandler()
-    condition_handler = ConditionHandler(Dict(:normal => 0.0))
-    handlers_stack = [condition_handler, logjoint_handler]
+    @jyro function m()
+        x ~ Normal()
+    end
 
-    name = :normal
-    dist = Normal()
-    enter!(trace, handlers_stack[2])
-    val = Minijyro.sample!(trace, handlers_stack, name, dist)
+    condition!(m, Dict(:x => 0.0))
+    log_joint!(m)
+    trace!(m)
+
+    t = m()
+    val = t[:msgs][:x][:value]
 
     @test val == 0.0
-    @test trace[:logjoint] == logpdf(dist, 0.0)
-    # TODO: Add test for is observed.    
+    @test t[:logjoint] == logpdf(Normal(), 0.0)
+    @test t[:msgs][:x][:is_observed]
 end
 
 @testset "replay handler" begin

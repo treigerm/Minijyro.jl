@@ -96,7 +96,6 @@ function hmc(model::MinijyroModel, step_size, n_leapfrog, n_samples, model_args;
 
     # Construct Hamiltonian system
     metric = UnitEuclideanMetric(length(initial_params))
-    # TODO: More autodiff options.
     hamiltonian = Hamiltonian(metric, density, grad_fn)
 
     integrator = Leapfrog(step_size)

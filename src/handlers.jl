@@ -1,25 +1,3 @@
-# TODO: Generate functions using the handler and handle functions.
-
-abstract type AbstractHandler end
-
-# TODO: Is this good Julia code for "noop" functions?
-function enter!(trace::Dict, h::AbstractHandler)
-    return
-end
-
-function exit!(trace::Dict, h::AbstractHandler)
-    return
-end
-
-function process_message!(trace::Dict, h::AbstractHandler, msg::Dict)
-    return
-end
-
-function postprocess_message!(trace::Dict, h::AbstractHandler, msg::Dict)
-    return
-end
-
-# TODO: Maybe rename into something like RecordMessagesHandler
 struct TraceHandler <: AbstractHandler end
 
 function enter!(trace::Dict, h::TraceHandler)
@@ -81,6 +59,19 @@ function process_message!(trace::Dict, h::EscapeHandler, msg::Dict)
         cont(t, m) = throw(EscapeException(t, m[:name]))
         msg[:continuation] = cont
     end
+end
+
+# TODO: Maybe move this into handlers.jl?
+function handle!(model::MinijyroModel, handler)
+    # TODO: Type for handler.
+    push!(model.handlers_stack, handler)
+end
+
+function handle(model::MinijyroModel, handler)
+    # Same has handle! but do not alter original model.
+    m = copy(model)
+    push!(m.handlers_stack, handler)
+    return m
 end
 
 # Generated convenience functions

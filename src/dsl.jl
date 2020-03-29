@@ -4,20 +4,6 @@ using Base
 const TRACE_SYMBOL = :trace
 const STACK_SYMBOL = :handlers_stack
 
-# TODO: Make handlers stack a stack of AbstractHandlers.
-# TODO: Maybe use actual stack and not an array?
-struct MinijyroModel
-    handlers_stack::Array{Any,1}
-    model_fn::Function
-end
-
-function (model::MinijyroModel)(args...)
-    # TODO: Possibly give nicer error message when args are given in wrong type.
-    return model.model_fn(model.handlers_stack, args...)
-end
-
-Base.copy(m::MinijyroModel) = MinijyroModel(copy(m.handlers_stack), m.model_fn)
-
 macro jyro(expr)
     # TODO: Check for return.
     fn_dict = MacroTools.splitdef(expr)
@@ -46,7 +32,7 @@ macro jyro(expr)
     return quote
         $fn_expr
 
-        $(esc(model_name)) = MinijyroModel([], $(esc(fn_name)))
+        $(esc(model_name)) = MinijyroModel(AbstractHandler[], $(esc(fn_name)))
     end
 end
 
@@ -64,19 +50,6 @@ function translate_tilde(expr)
             e
         end
     end
-end
-
-# TODO: Maybe move this into handlers.jl?
-function handle!(model::MinijyroModel, handler)
-    # TODO: Type for handler.
-    push!(model.handlers_stack, handler)
-end
-
-function handle(model::MinijyroModel, handler)
-    # Same has handle! but do not alter original model.
-    m = copy(model)
-    push!(m.handlers_stack, handler)
-    return m
 end
 
 # TODO: Macro for handling code segments

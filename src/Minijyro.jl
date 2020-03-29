@@ -23,6 +23,7 @@ export sample!,
     log_prob
 
 
+include("minijyro_types.jl")
 include("dsl.jl")
 include("handlers.jl")
 include("inference.jl")
@@ -77,17 +78,4 @@ function apply_stack!(trace, handlers_stack, msg)
 
     return msg
 end
-
-# TODO: Is this the right place for this function?
-function log_prob(trace::Dict)
-    if !haskey(trace, :msgs)
-        error("Trace must contain messages. Run model with TraceHandler.")
-    end
-
-    log_prob = 0.0
-    for msg in values(trace[:msgs])
-        log_prob += logpdf(msg[:args][1], msg[:value])
-    end
-end
-
 end # module
