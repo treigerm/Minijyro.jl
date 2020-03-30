@@ -5,12 +5,11 @@ using Random
 
 Random.seed!(42)
 
-# TODO Check whether we use testset properly.
+# TODO Check whether we use testset properly. Should have one "root" testset.
 
 @testset "sample function" begin
-    # TODO: Check that handlers stack is not altered.
     trace = Dict()
-    handlers_stack = []
+    handlers_stack = AbstractHandler[]
     name = :normal
     dist = Normal()
     @test isa(Minijyro.sample!(trace, handlers_stack, name, dist), Float64)
@@ -154,14 +153,12 @@ end
         s ~ DiscreteNonParametric([a + b + c], [1.0])
     end
 
-    #handle!(model, ConditionHandler(Dict(:s => 2)))
     dist = discrete_enumeration(model, :s)
     analytic_dist = DiscreteNonParametric([0, 1, 2, 3], [0.125, 0.375, 0.375, 0.125])
     @test dist == analytic_dist
-    # TODO: Tests.
 end
 
-@testset "generated" begin
+@testset "generated handlers" begin
     @jyro function model()
         a ~ Normal()
     end
@@ -171,6 +168,7 @@ end
     t = model()
     cond_t = trace(conditioned_model)()
 
+    # Traces from conditioned model should be different.
     @test cond_t[:msgs][:a][:value] == 1.0
     @test cond_t[:msgs][:a][:value] != t[:msgs][:a][:value] # This should technically never happen.
 end

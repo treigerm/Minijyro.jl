@@ -2,10 +2,11 @@ module Minijyro
 
 using Distributions
 
-# TODO: Do we want to export the enter! and exit! functions?
+# TODO: Do we want to export the enter!, exit!, sample! and apply_stack!?
 # TODO: Reexport Distributions, DistributionsAD and AutoDiff
 export sample!,
     apply_stack!,
+    AbstractHandler,
     TraceHandler,
     LogJointHandler,
     ConditionHandler,
@@ -29,13 +30,11 @@ include("handlers.jl")
 include("inference.jl")
 
 
-function sample!(trace, handlers_stack, name, dist)
-    # TODO: Type annotations.
+function sample!(trace::Dict, handlers_stack::Array{AbstractHandler,1}, name::Any, dist::Distributions.Distribution)
     if length(handlers_stack) == 0
         return rand(dist)
     end
 
-    # TODO: Does this need to be a dict?
     # TODO: What are the fields we really need for our use case.
     initial_msg = Dict(
         :fn => rand,
@@ -48,7 +47,7 @@ function sample!(trace, handlers_stack, name, dist)
     return msg[:value]
 end
 
-function apply_stack!(trace, handlers_stack, msg)
+function apply_stack!(trace::Dict, handlers_stack::Array{AbstractHandler,1}, msg::Dict)
     pointer = 1
     for (p, handler) in enumerate(handlers_stack[end:-1:1])
         pointer = p
@@ -60,12 +59,6 @@ function apply_stack!(trace, handlers_stack, msg)
 
     if !(get(msg, :value, nothing) != nothing || get(msg, :done, false))
         msg[:value] = msg[:fn](msg[:args]...)
-    end
-
-    if length(handlers_stack) === 0
-        # TODO: Can we make this more pretty?
-        # NOTE: We should not need to have to deal with the case that handlers_stack is empty
-        return msg
     end
 
     for handler in handlers_stack[end-pointer+1:end]
