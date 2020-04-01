@@ -36,13 +36,17 @@ function sample!(
         return rand(dist)
     end
 
-    # TODO: What are the fields we really need for our use case.
+    # NOTE: In this simplified case we could replace :args with :dist because
+    #       our "effect" is always sampling from a distribution.
     initial_msg = Dict(
         :fn => rand,
         :args => (dist, ),
         :name => name,
         :value => nothing,
-        :is_observed => false
+        :is_observed => false,
+        :done => false, # Use done if we still want other handlers to be active.
+        :stop => false, # Use stop if we want handlers below on the stack not to be active.
+        :continuation => nothing
     )
     msg = apply_stack!(trace, handlers_stack, initial_msg)
     return msg[:value]
@@ -53,24 +57,29 @@ function apply_stack!(
     handlers_stack::Array{AbstractHandler,1},
     msg::Dict
 )
-    pointer = 1
-    for (p, handler) in enumerate(handlers_stack[end:-1:1])
-        pointer = p
+    # NOTE: This function assumes handlers_stack is not empty.
+    handler_counter = 0
+    # Loop through handlers from top of the stack to the bottom.
+    for handler in handlers_stack[end:-1:1]
+        handler_counter += 1
         process_message!(trace, handler, msg)
-        if get(msg, :stop, false)
+        if msg[:stop]
             break
         end
     end
 
-    if !(get(msg, :value, nothing) != nothing || get(msg, :done, false))
+    if !(msg[:value] != nothing || msg[:done])
         msg[:value] = msg[:fn](msg[:args]...)
     end
 
-    for handler in handlers_stack[end-pointer+1:end]
+    # Loop through handlers from bottom of the stack to the top.
+    # If we exited the first loop early then we will start looping from the
+    # handler which caused the loop to exit.
+    for handler in handlers_stack[end-handler_counter+1:end]
         postprocess_message!(trace, handler, msg)
     end
 
-    if get(msg, :continuation, nothing) != nothing
+    if msg[:continuation] != nothing
         msg[:continuation](trace, msg)
     end
 

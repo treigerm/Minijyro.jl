@@ -122,6 +122,7 @@ function queue(model::MinijyroModel, queue)
             top_trace = popfirst!(queue)
             try
                 queue_m = handle(m, ReplayHandler(top_trace))
+                # Escape when we see a new variable that is not in the trace.
                 discr_esc(msg) = !haskey(top_trace[:msgs], msg[:name])
                 queue_m = handle(queue_m, EscapeHandler(discr_esc))
                 queue_m = handle(queue_m, TraceHandler())
