@@ -5,21 +5,24 @@ const TRACE_SYMBOL = :trace
 const STACK_SYMBOL = :handlers_stack
 
 macro jyro(expr)
-    # TODO: Check for return.
+    # TODO: Check for return. Possibly go through function body and before each
+    # return statement add the "exit!" loop.
+    # Could also add trace and handler stack to argument of function
+    # and call the function. This way we automatically get the return type.
     fn_dict = MacroTools.splitdef(expr)
     pushfirst!(fn_dict[:args], STACK_SYMBOL)
 
     body = translate_tilde(fn_dict[:body])
 
-    # TODO: Is it okay to assign h to the loop variable?
+    loop_var = gensym()
     fn_dict[:body] = quote
         $TRACE_SYMBOL = Dict()
-        for h in $(STACK_SYMBOL)[end:-1:1]
-            enter!($TRACE_SYMBOL, h)
+        for $(loop_var) in $(STACK_SYMBOL)[end:-1:1]
+            enter!($TRACE_SYMBOL, $(loop_var))
         end
         $(body.args...)
-        for h in $STACK_SYMBOL
-            exit!($TRACE_SYMBOL, h)
+        for $(loop_var) in $STACK_SYMBOL
+            exit!($TRACE_SYMBOL, $(loop_var))
         end
         return $TRACE_SYMBOL
     end

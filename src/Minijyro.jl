@@ -2,10 +2,8 @@ module Minijyro
 
 using Distributions
 
-# TODO: Do we want to export the enter!, exit!, sample! and apply_stack!?
-# TODO: Reexport Distributions, DistributionsAD and AutoDiff
+# TODO: Reexport Distributions, DistributionsAD
 export sample!,
-    apply_stack!,
     AbstractHandler,
     TraceHandler,
     LogJointHandler,
@@ -14,8 +12,6 @@ export sample!,
     EscapeHandler,
     EscapeException,
     queue,
-    enter!,
-    exit!,
     @jyro,
     handle!,
     handle,
@@ -30,7 +26,12 @@ include("handlers.jl")
 include("inference.jl")
 
 
-function sample!(trace::Dict, handlers_stack::Array{AbstractHandler,1}, name::Any, dist::Distributions.Distribution)
+function sample!(
+    trace::Dict,
+    handlers_stack::Array{AbstractHandler,1},
+    name::Any,
+    dist::Distributions.Distribution
+)
     if length(handlers_stack) == 0
         return rand(dist)
     end
@@ -47,7 +48,11 @@ function sample!(trace::Dict, handlers_stack::Array{AbstractHandler,1}, name::An
     return msg[:value]
 end
 
-function apply_stack!(trace::Dict, handlers_stack::Array{AbstractHandler,1}, msg::Dict)
+function apply_stack!(
+    trace::Dict,
+    handlers_stack::Array{AbstractHandler,1},
+    msg::Dict
+)
     pointer = 1
     for (p, handler) in enumerate(handlers_stack[end:-1:1])
         pointer = p

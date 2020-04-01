@@ -60,7 +60,7 @@ function load_params!(params_dict, param_info, params)
         else
             num_elems = param_info[name][:num_elems]
             params_dict[name] = reshape(params[i:i+num_elems-1], param_info[name][:shape])
-            i += num_elems # TODO: Check for no off by one error.
+            i += num_elems
         end
     end
 end
@@ -81,7 +81,7 @@ function get_grad_fn(density::Function, autodiff::Symbol)
 end
 
 function hmc(model::MinijyroModel, step_size, n_leapfrog, n_samples, model_args; autodiff=:forward)
-    # TODO: This assumes a "static" model with fixed dimensionality.
+    # NOTE: This assumes a "static" model with fixed dimensionality.
     param_info, num_params = get_param_info(model, model_args)
     initial_params = randn(num_params)
 

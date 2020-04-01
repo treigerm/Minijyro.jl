@@ -16,9 +16,11 @@ end
 
 function postprocess_message!(trace::Dict, h::LogJointHandler, msg::Dict)
     dist = msg[:args][1]
-    # TODO: What to do if value is nothing.
     if msg[:value] != nothing
         trace[:logjoint] = trace[:logjoint] + logpdf(dist, msg[:value])
+    else
+        # TODO: Warning might be annoying when running the queue handler.
+        @warn "Encountered site with value nothing." msg[:name]
     end
 end
 
@@ -61,13 +63,11 @@ function process_message!(trace::Dict, h::EscapeHandler, msg::Dict)
     end
 end
 
-# TODO: Maybe move this into handlers.jl?
-function handle!(model::MinijyroModel, handler)
-    # TODO: Type for handler.
+function handle!(model::MinijyroModel, handler::AbstractHandler)
     push!(model.handlers_stack, handler)
 end
 
-function handle(model::MinijyroModel, handler)
+function handle(model::MinijyroModel, handler::AbstractHandler)
     # Same has handle! but do not alter original model.
     m = copy(model)
     push!(m.handlers_stack, handler)
@@ -95,8 +95,8 @@ function get_function_name(type_name::Symbol)
 end
 
 for h in handlers
-    h_fn_name = get_function_name(h)
     # TODO: Can we do kwargs as well?
+    h_fn_name = get_function_name(h)
     # Function name for when we do mutation.
     h_fn_name_mut = Symbol(h_fn_name, "!")
     @eval begin
@@ -113,7 +113,7 @@ for h in handlers
 end
 
 function queue(model::MinijyroModel, queue)
-    max_tries = Int(1e6) # TODO: Do we need this?
+    max_tries = Int(1e6) # Make sure we do not have infinite loops.
     function _fn(handlers_stack, args...)
         # TODO: This cannot deal with the fact that model_fn might have been
         # been changed. Alternative is to pass model to the model_fn.

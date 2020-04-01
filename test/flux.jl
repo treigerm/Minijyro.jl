@@ -18,7 +18,7 @@ function set_params!(nn, weights)
         num_elements = prod(size(p))
         new_p = weights[i:i+num_elements-1]
         push!(new_params, reshape(new_p, size(p)))
-        i += num_elements # TODO: Check for no off by one error.
+        i += num_elements
     end
     Flux.loadparams!(nn, new_params)
 end

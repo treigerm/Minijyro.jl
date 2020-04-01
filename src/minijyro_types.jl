@@ -1,6 +1,5 @@
 abstract type AbstractHandler end
 
-# TODO: Is this good Julia code for "noop" functions?
 function enter!(trace::Dict, h::AbstractHandler)
     return
 end
