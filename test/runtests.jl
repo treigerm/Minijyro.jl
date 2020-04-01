@@ -8,6 +8,7 @@ Random.seed!(42)
 @testset "Minijyro tests" begin
     include("test_handlers.jl")
     include("test_inference.jl")
+    include("test_macro.jl")
 
     @testset "sample function" begin
         trace = Dict()

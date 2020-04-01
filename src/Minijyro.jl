@@ -4,6 +4,7 @@ using Distributions
 
 # TODO: Reexport Distributions, DistributionsAD
 export sample!,
+    MinijyroModel,
     AbstractHandler,
     TraceHandler,
     LogJointHandler,
@@ -17,7 +18,8 @@ export sample!,
     handle,
     discrete_enumeration,
     hmc,
-    log_prob
+    enter!,
+    exit!
 
 
 include("minijyro_types.jl")
@@ -44,8 +46,8 @@ function sample!(
         :name => name,
         :value => nothing,
         :is_observed => false,
-        :done => false, # Use done if we still want other handlers to be active.
-        :stop => false, # Use stop if we want handlers below on the stack not to be active.
+        :done => false, # Use if we still want other handlers to be active.
+        :stop => false, # Use if we want handlers below on the stack not to be active.
         :continuation => nothing
     )
     msg = apply_stack!(trace, handlers_stack, initial_msg)
