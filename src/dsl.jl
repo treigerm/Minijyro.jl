@@ -11,7 +11,7 @@ macro jyro(expr)
 
     loop_var = gensym()
     body = translate_tilde(fn_dict[:body])
-    body, has_return = translate_return(body, loop_var)
+    body = translate_return(body, loop_var)
 
     fn_dict[:body] = quote
         $TRACE_SYMBOL = Dict{Any,Any}($(RETURN_KEY) => nothing)
@@ -42,11 +42,10 @@ macro jyro(expr)
 end
 
 function translate_tilde(expr)
-    # TODO: Handler cases in loops.
     # NOTE: Code adapted from https://github.com/probcomp/Gen/blob/master/src/dsl/dsl.jl
     MacroTools.postwalk(expr) do e
         if MacroTools.@capture(e, {addr_} ~ rhs_)
-            # TODO: How to handle variable assignment?
+            # NOTE: This does not sample
             :(Minijyro.sample!($TRACE_SYMBOL, $STACK_SYMBOL, $(addr), $rhs))
         elseif MacroTools.@capture(e, lhs_ ~ rhs_)
             name_symbol = QuoteNode(lhs)
@@ -58,10 +57,8 @@ function translate_tilde(expr)
 end
 
 function translate_return(expr, loop_var)
-    has_return = false
-    expr = MacroTools.postwalk(expr) do e
+    MacroTools.postwalk(expr) do e
         if MacroTools.@capture(e, return r_)
-            has_return = true
             quote
                 for $(loop_var) in $STACK_SYMBOL
                     exit!($TRACE_SYMBOL, $(loop_var))
@@ -73,7 +70,6 @@ function translate_return(expr, loop_var)
             e
         end
     end
-    return (expr, has_return)
 end
 
 # TODO: Macro for handling code segments
