@@ -1,6 +1,5 @@
 using Flux
 using LinearAlgebra: I # Identity matrix
-using DistributionsAD
 using Distributions
 
 using Minijyro
@@ -50,5 +49,4 @@ ys = true_trace[:msgs][:y][:value]
 condition!(model, Dict(:y => ys))
 trace!(model)
 
-# TODO: Tune these values.
-samples, stats = hmc(model, 0.05, 10, 1000, (xs, dnn, sigma), autodiff=:reverse); # TODO: name arguments.
+samples, stats = nuts(model, (xs, dnn, sigma), 2000; autodiff=:reverse, progress=true);

@@ -3,7 +3,7 @@ using AdvancedHMC
 using ForwardDiff
 using ReverseDiff
 
-function discrete_enumeration(model::MinijyroModel, site_name)
+function discrete_enumeration(model::MinijyroModel, site_name::Any)
     # Site name is the name of the variable we are interested in.
     empty_trace = Dict()
     empty_trace[:msgs] = Dict()
@@ -14,7 +14,7 @@ function discrete_enumeration(model::MinijyroModel, site_name)
     samples = Dict{Int,Float64}()
     while length(q) > 0
         trace = enum_model()
-        val = trace[:msgs][site_name][:value]
+        val = site_name == :_return ? trace[:_return] : trace[:msgs][site_name][:value]
         if !haskey(samples, val)
             samples[val] = 0.0
         end
@@ -80,7 +80,14 @@ function get_grad_fn(density::Function, autodiff::Symbol)
     end
 end
 
-function hmc(model::MinijyroModel, step_size, n_leapfrog, n_samples, model_args; autodiff=:forward)
+function hmc(
+    model::MinijyroModel,
+    model_args::Tuple,
+    step_size::Float64,
+    n_leapfrog::Int,
+    n_samples::Int;
+    autodiff=:forward
+)
     # NOTE: This assumes a "static" model with fixed dimensionality.
     param_info, num_params = get_param_info(model, model_args)
     initial_params = randn(num_params)
@@ -100,5 +107,49 @@ function hmc(model::MinijyroModel, step_size, n_leapfrog, n_samples, model_args;
 
     integrator = Leapfrog(step_size)
     proposal = StaticTrajectory(integrator, n_leapfrog)
-    return sample(hamiltonian, proposal, initial_params, n_samples)
+    return AdvancedHMC.sample(hamiltonian, proposal, initial_params, n_samples)
+end
+
+function nuts(
+    model::MinijyroModel,
+    model_args::Tuple,
+    num_samples::Int;
+    num_warmup=1000,
+    autodiff=:forward,
+    progress=true
+)
+    # Sample using NUTS.
+    # NOTE: This assumes a "static" model with fixed dimensionality.
+    param_info, num_params = get_param_info(model, model_args)
+    initial_params = randn(num_params)
+
+    function density(params)
+        params_dict = Dict()
+        load_params!(params_dict, param_info, params)
+        m = log_joint(condition(model, params_dict))
+        return m(model_args...)[:logjoint]
+    end
+
+    grad_fn = get_grad_fn(density, autodiff)
+
+    metric = DiagEuclideanMetric(length(initial_params))
+    hamiltonian = Hamiltonian(metric, density, grad_fn)
+
+    initial_step_size = find_good_eps(hamiltonian, initial_params)
+    integrator = Leapfrog(initial_step_size)
+
+    proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+    adaptor = StanHMCAdaptor(
+        Preconditioner(metric), NesterovDualAveraging(0.8, integrator)
+    )
+
+    return AdvancedHMC.sample(
+        hamiltonian,
+        proposal,
+        initial_params,
+        num_samples,
+        adaptor,
+        num_warmup;
+        progress=progress
+    )
 end

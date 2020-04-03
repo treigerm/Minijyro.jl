@@ -18,6 +18,7 @@ export sample!,
     handle,
     discrete_enumeration,
     hmc,
+    nuts,
     enter!,
     exit!
 
