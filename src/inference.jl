@@ -3,6 +3,20 @@ using AdvancedHMC
 using ForwardDiff
 using ReverseDiff
 
+"""
+    discrete_enumeration(model::MinijyroModel, site_name::Any)
+
+Computes the marginal distribution of `site_name` by enumerating all possible
+execution traces. This requires that all sample sites have discrete values.
+
+# Arguments
+- `model::MinijyroModel`: model which to perform inference in
+- `site_name::Any`: site name which to compute marginal distribution of; use `:_return`
+    to compute marginal distribution of the return value
+
+# Returns
+- `Distributions.DiscreteNonParametric`: the marginal distribution
+"""
 function discrete_enumeration(model::MinijyroModel, site_name::Any)
     # Site name is the name of the variable we are interested in.
     empty_trace = Dict()
@@ -83,13 +97,29 @@ function get_grad_fn(density::Function, autodiff::Symbol)
     end
 end
 
+"""
+    hmc(args...; kwargs...)
+
+Runs static Hamiltonian Monte Carlo with a fixed integrator step size and fixed
+number of integrator steps.
+
+# Arguments
+- `model::MinijyroModel`: model to do inference in
+- `model_args::Tuple`: arguments for the `model` to be called with
+- `step_size::Float64`: integrator step size
+- `n_leapfrog::Int`: number of steps taken by leapfrog integrator
+- `n_samples::Int`: number of samples to take from posterior
+
+# Keywords
+- `autodiff::Symbol=:forward`: either `:forward` or `:reverse` to select autodiff mode
+"""
 function hmc(
     model::MinijyroModel,
     model_args::Tuple,
     step_size::Float64,
     n_leapfrog::Int,
     n_samples::Int;
-    autodiff=:forward
+    autodiff::Symbol=:forward
 )
     # NOTE: This assumes a "static" model with fixed dimensionality.
     param_info, num_params = get_param_info(model, model_args)
@@ -113,13 +143,29 @@ function hmc(
     return AdvancedHMC.sample(hamiltonian, proposal, initial_params, n_samples)
 end
 
+"""
+    nuts(args...; kwargs...)
+
+Run the NUTS algorithm to get posterior samples from `model`.
+
+# Arguments
+- `model::MinijyroModel`: model to do inference in
+- `model_args::Tuple`: arguments for the `model` to be called with
+- `num_samples::Int`: number of samples to take from posterior
+
+# Keywords
+- `num_warmup::Int=1000`: number of warmup steps to burn-in the chain; these samples
+    will be discarded
+- `autodiff::Symbol=:forward`: either `:forward` or `:reverse` to select autodiff mode
+- `progress::Bool=true`: whether to display progress meter or not
+"""
 function nuts(
     model::MinijyroModel,
     model_args::Tuple,
     num_samples::Int;
-    num_warmup=1000,
-    autodiff=:forward,
-    progress=true
+    num_warmup::Int=1000,
+    autodiff::Symbol=:forward,
+    progress::Bool=true
 )
     # NOTE: This assumes a "static" model with fixed dimensionality.
     param_info, num_params = get_param_info(model, model_args)
