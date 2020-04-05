@@ -5,6 +5,15 @@ const TRACE_SYMBOL = :trace
 const STACK_SYMBOL = :handlers_stack
 const RETURN_KEY = :(:_return)
 
+"""
+    @jyro
+
+Takes a function and transforms it into a `MinijyroModel`. It replaces all the
+`~` expressions in the function body and replaces them with `sample!` statements.
+Furthermore, the new generated function will return a `Dict` which is called the
+`trace` of the program. If the function has any return values they will now be
+stored in `trace[:_return]`.
+"""
 macro jyro(expr)
     fn_dict = MacroTools.splitdef(expr)
     pushfirst!(fn_dict[:args], STACK_SYMBOL)

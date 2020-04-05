@@ -100,8 +100,8 @@ end
 """
     hmc(args...; kwargs...)
 
-Runs static Hamiltonian Monte Carlo with a fixed integrator step size and fixed
-number of integrator steps.
+Uses `AdvancedHMC` to run static Hamiltonian Monte Carlo with a fixed integrator
+step size and fixed number of integrator steps.
 
 # Arguments
 - `model::MinijyroModel`: model to do inference in
@@ -146,7 +146,7 @@ end
 """
     nuts(args...; kwargs...)
 
-Run the NUTS algorithm to get posterior samples from `model`.
+Uses `AdvancedHMC` to run the NUTS algorithm to get posterior samples from `model`.
 
 # Arguments
 - `model::MinijyroModel`: model to do inference in
