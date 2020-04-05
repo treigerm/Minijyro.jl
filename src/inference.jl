@@ -27,7 +27,10 @@ function discrete_enumeration(model::MinijyroModel, site_name::Any)
     return DiscreteNonParametric(vals, probs)
 end
 
-function get_param_info(model, model_args)
+function get_param_info(model::MinijyroModel, model_args::Tuple)
+    # For each unobserved site get information on whether it is a scalar or not
+    # and if it is not a scalar then get its shape and the number of elements in
+    # there.
     t = trace(model)(model_args...)
     param_info = Dict()
     num_params = 0 # Total number of parameters
@@ -38,7 +41,7 @@ function get_param_info(model, model_args)
                 :is_scalar => isa(val, Number)
             )
             if !d[:is_scalar]
-                # TODO: Assume it is an array. Maybe have an assert.
+                @assert isa(val, AbstractArray) "Sampled values must either be Number or AbstractArray but found $(typeof(val))."
                 d[:shape] = size(val)
                 d[:num_elems] = prod(size(val))
             end
@@ -50,7 +53,7 @@ function get_param_info(model, model_args)
     return (param_info, num_params)
 end
 
-function load_params!(params_dict, param_info, params)
+function load_params!(params_dict::Dict, param_info::Dict, params::AbstractArray)
     # Load parameters from params into params_dict.
     i = 1
     for name in keys(param_info)
@@ -118,7 +121,6 @@ function nuts(
     autodiff=:forward,
     progress=true
 )
-    # Sample using NUTS.
     # NOTE: This assumes a "static" model with fixed dimensionality.
     param_info, num_params = get_param_info(model, model_args)
     initial_params = randn(num_params)
