@@ -2,7 +2,6 @@ module Minijyro
 
 using Distributions
 
-# TODO: Reexport Distributions, DistributionsAD
 export sample!,
     MinijyroModel,
     AbstractHandler,
@@ -60,7 +59,8 @@ function apply_stack!(
     handlers_stack::Array{AbstractHandler,1},
     msg::Dict
 )
-    # NOTE: This function assumes handlers_stack is not empty.
+    @assert length(handlers_stack) > 0
+
     handler_counter = 0
     # Loop through handlers from top of the stack to the bottom.
     for handler in handlers_stack[end:-1:1]
