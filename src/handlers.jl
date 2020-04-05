@@ -1,3 +1,9 @@
+"""
+    TraceHandler
+
+Saves the messages from each sample site in a dictionary with the keys as the
+name of the sample site. All the messages are saved in `trace[:msgs]`.
+"""
 struct TraceHandler <: AbstractHandler end
 
 function enter!(trace::Dict, h::TraceHandler)
@@ -8,6 +14,12 @@ function postprocess_message!(trace::Dict, h::TraceHandler, msg::Dict)
     trace[:msgs][msg[:name]] = copy(msg)
 end
 
+"""
+    LogJointHandler
+
+Computes the sum of the log densities of all sample sites. The result is saved
+in trace[:logjoint].
+"""
 struct LogJointHandler <: AbstractHandler end
 
 function enter!(trace::Dict, h::LogJointHandler)
@@ -24,6 +36,16 @@ function postprocess_message!(trace::Dict, h::LogJointHandler, msg::Dict)
     end
 end
 
+"""
+    ConditionHandler
+
+Conditions the model on the given data. This means that the sample sites
+included in `data` will be recorded as observed and the model will always
+generate traces which agree with the data.
+
+# Fields
+- `data::Dict`: data to condition on saved as `{site_name => value}`
+"""
 struct ConditionHandler <: AbstractHandler
     data::Dict
 end
@@ -36,6 +58,15 @@ function process_message!(trace::Dict, h::ConditionHandler, msg::Dict)
     end
 end
 
+"""
+    ReplayHandler
+
+Makes sure the model generates the same value as given in `trace`. Only the sites
+that do not appear in `trace` will be randomly sampled.
+
+# Fields
+- `trace::Dict`: trace with values used for replay
+"""
 struct ReplayHandler <: AbstractHandler
     trace::Dict
 end
@@ -46,13 +77,32 @@ function process_message!(trace::Dict, h::ReplayHandler, msg::Dict)
     end
 end
 
+"""
+    EscapeHandler
+
+Interrupts the execution of model when `escape_fn` evaluates to `true`. Specifically,
+an `EscapeException` is thrown to interrupt the execution.
+
+# Fields
+- `escape_fn::Function`: function that takes a message as an argument and returns
+    `true` at the sample site to escape from
+"""
 struct EscapeHandler <: AbstractHandler
     escape_fn::Function
 end
 
+"""
+    EscapeException
+
+Raised by `EscapeHandler`.
+
+# Fields
+- `trace::Dict`: trace of the model execution that has been interrupted
+- `name::Any`: name of the sample site that caused interruption
+"""
 struct EscapeException <: Exception
     trace::Dict
-    name
+    name::Any
 end
 
 function process_message!(trace::Dict, h::EscapeHandler, msg::Dict)
@@ -112,7 +162,9 @@ for h in handlers
     end
 end
 
-function queue(model::MinijyroModel, queue)
+function queue(model::MinijyroModel, queue::Array{Dict{Any,Any},1})
+    # NOTE: This type of effect handler is actually more powerful because we can
+    #       change the model_fn.
     max_tries = Int(1e6) # Make sure we do not have infinite loops.
     function _fn(handlers_stack, args...)
         # TODO: This cannot deal with the fact that model_fn might have been
