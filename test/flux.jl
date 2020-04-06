@@ -38,7 +38,7 @@ end
 # Generate some random data.
 D = 2 # Dimensionality of data
 N = 100 # Number of data points
-sigma = 0.1 # Noise level TODO: Set a reasonable value for this.
+sigma = 0.1 # Noise level
 dnn = Chain(Dense(D, 5, relu), Dense(5, 1), x -> vec(x))
 
 xs = randn(D, N)

@@ -113,10 +113,32 @@ function process_message!(trace::Dict, h::EscapeHandler, msg::Dict)
     end
 end
 
+"""
+    handle!(model::MinijyroModel, handler::AbstractHandler)
+
+Pushes the `handler` on top of the stack of `model`.
+
+# Arguments
+- `model::MinijyroModel`
+- `handler::AbstractHandler`
+"""
 function handle!(model::MinijyroModel, handler::AbstractHandler)
     push!(model.handlers_stack, handler)
 end
 
+"""
+    handle(model::MinijyroModel, handler::AbstractHandler)
+
+Same as `handle!` but does not mutate the `model` and instead returns a new
+model with the added `handler`.
+
+# Arguments
+- `model::MinijyroModel`
+- `handler::AbstractHandler`
+
+# Returns
+- `MinijyroModel`
+"""
 function handle(model::MinijyroModel, handler::AbstractHandler)
     # Same has handle! but do not alter original model.
     m = copy(model)
@@ -162,6 +184,24 @@ for h in handlers
     end
 end
 
+"""
+    queue(model::MinijyroModel, queue::Array{Dict{Any,Any},1})
+
+Will replay the model with the first trace in `queue`. Once we encounter a
+discrete sample site which was not in the trace the function execution is
+interrupted and for each value in the support of the new sample site we create
+a new trace from the old one and add it to the queue.
+
+This effect handler can be used to perform breadth-first enumeration of all
+possible traces.
+
+# Arguments
+- `model::MinijyroModel`: model
+- `queue::Array{Dict{Any,Any},1}`: array of traces
+
+# Returns
+- `MinijyroModel`
+"""
 function queue(model::MinijyroModel, queue::Array{Dict{Any,Any},1})
     # NOTE: This type of effect handler is actually more powerful because we can
     #       change the model_fn.

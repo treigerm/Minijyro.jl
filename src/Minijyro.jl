@@ -28,6 +28,18 @@ include("handlers.jl")
 include("inference.jl")
 
 
+"""
+    sample!(args...)
+
+Allows sampling from probability distributions with side effects specified by
+effect handlers in `handlers_stack`.
+
+# Arguments
+- `trace::Dict`: dict that can be used to store things in a global state
+- `handlers_stack::Array{AbstractHandler,1}`: stack of effect handlers
+- `name::Any`: unique name for the sample site
+- `dist::Distributions.Distribution`: distribution to sample from
+"""
 function sample!(
     trace::Dict,
     handlers_stack::Array{AbstractHandler,1},
@@ -40,6 +52,7 @@ function sample!(
 
     # NOTE: In this simplified case we could replace :args with :dist because
     #       our "effect" is always sampling from a distribution.
+    # NOTE: This could be a custom type but is a Dict for simplicity.
     initial_msg = Dict(
         :fn => rand,
         :args => (dist, ),
@@ -48,12 +61,26 @@ function sample!(
         :is_observed => false,
         :done => false, # Use if we still want other handlers to be active.
         :stop => false, # Use if we want handlers below on the stack not to be active.
-        :continuation => nothing
+        :continuation => nothing # Function to be called after effect handlers have been applied.
     )
     msg = apply_stack!(trace, handlers_stack, initial_msg)
     return msg[:value]
 end
 
+"""
+    apply_stack!(trace::Dict, handlers_stack::Array{AbstractHandler,1}, msg::Dict)
+
+Apply all the effect handlers from `handlers_stack` to the effect described in
+`msg`.
+
+# Arguments
+- `trace::Dict`: dict which can be used to store things in a global state
+- `handlers_stack::Array{AbstractHandler,1}`: stack of effect handlers
+- `msg::Dict`: dict describing the effectful computation
+
+# Returns
+- `Dict`: message after effect handlers are applied
+"""
 function apply_stack!(
     trace::Dict,
     handlers_stack::Array{AbstractHandler,1},

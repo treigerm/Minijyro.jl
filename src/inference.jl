@@ -35,6 +35,7 @@ function discrete_enumeration(model::MinijyroModel, site_name::Any)
         samples[val] += exp(trace[:logjoint])
     end
 
+    # Normalize scores so that they sum to 1.
     vals = collect(keys(samples))
     probs = collect(values(samples))
     probs = probs ./ sum(probs)
