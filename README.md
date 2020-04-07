@@ -5,6 +5,12 @@ The name comes from the fact that this project is largely based on the ideas fro
 [Pyro's effect handlers](http://pyro.ai/examples/effect_handlers.html)
 and their [Mini-Pyro implementation](http://pyro.ai/examples/minipyro.html).
 
+**NOTE**: This is not meant to be a serious PPL to be used by anyone. If you are
+interested in probabilistic programming in Julia have a look at
+[Turing.jl](https://github.com/TuringLang/Turing.jl),
+[Gen](https://github.com/probcomp/Gen) and
+[Soss.jl](https://github.com/cscherrer/Soss.jl).
+
 ## Example: Bayesian Linear Regression
 
 A simple model taken from [Colin Caroll's tour of PPL APIs](https://colcarroll.github.io/ppl-api/).
@@ -16,7 +22,7 @@ using Random
 
 using Minijyro
 
-Random.seed!(42);
+Random.seed!(42)
 
 # Generate some data.
 N = 100

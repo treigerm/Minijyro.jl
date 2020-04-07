@@ -4,7 +4,7 @@ using Random
 
 using Minijyro
 
-Random.seed!(42);
+Random.seed!(42)
 
 # Generate some data.
 N = 100
