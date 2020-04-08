@@ -5,6 +5,15 @@ The name comes from the fact that this project is largely based on the ideas fro
 [Pyro's effect handlers](http://pyro.ai/examples/effect_handlers.html)
 and their [Mini-Pyro implementation](http://pyro.ai/examples/minipyro.html).
 
+The design goals of this language are:
+
+- Allow for concise definition of sample statements using `~` syntax
+- Use effect handlers to implement simple operations such as conditioning and
+    computing the log joint probability
+- Leverage existing Julia packages such as [Distributions.jl](https://github.com/JuliaStats/Distributions.jl),
+    [AdvancedHMC](https://github.com/TuringLang/AdvancedHMC.jl) and
+    [Flux](https://github.com/FluxML/Flux.jl)
+
 **NOTE**: This is not meant to be a serious PPL to be used by anyone. If you are
 interested in probabilistic programming in Julia have a look at
 [Turing.jl](https://github.com/TuringLang/Turing.jl),
