@@ -59,7 +59,13 @@ Here is a high-level overview of the inner workings of Minijyro. For more detail
 I recommend first reading through the links to the Pyro documentation from above
 and then through full the source code of Minijyro.
 
-Each `~` expression is translated into a call to
+Minijyro models are normal Julia functions which are annotated with the `@jyro`
+macro. The macro does some source code transformations and translates the function
+to a `MinijyroModel` type.
+See [dsl.jl](https://github.com/treigerm/Minijyro.jl/blob/master/src/dsl.jl) for
+the full implementation of the `@jyro` macro.
+
+Most importantly the `@jyro` macro translates each `~` expression into a call to
 
 ```julia
 function sample!(
@@ -87,9 +93,10 @@ function sample!(
 end
 ```
 
-See [dsl.jl](https://github.com/treigerm/Minijyro.jl/blob/master/src/dsl.jl) for
-the full implementation of the `@jyro` macro.
-`apply_stack!` is used to apply all effect handlers that are active at
+`sample!` basically samples a random value from `dist`. Crucially, any side effects
+of this sampling (e.g. computing the log density or saving the sampled value in
+`trace`) can be conveniently defined as effect handlers.
+The function `apply_stack!` is used to apply all effect handlers that are active at
 the given sample site:
 
 ```julia
